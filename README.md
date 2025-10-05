@@ -277,8 +277,9 @@ If you use DiffKV for your research, please cite our [paper](https://arxiv.org/a
 ```bibtex
 @inproceedings{zhang2025diffkv,
   title={DiffKV: Differentiated Memory Management for Large Language Models with Parallel KV Compaction},
-  author={Yanqi Zhang, Yuwei Hu, Runyuan Zhao, John C.S. Lui and Haibo Chen},
-  booktitle={Proceedings of the ACM SIGOPS 31th Symposium on Operating Systems Principles},
+  author={Zhang, Yanqi and Hu, Yuwei and Zhao, Runyuan and Lui, John CS and Chen, Haibo},
+  booktitle={Proceedings of the ACM SIGOPS 31st Symposium on Operating Systems Principles},
+  pages={431--445},
   year={2025}
 }
 ```
