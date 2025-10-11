@@ -34,7 +34,7 @@ os.environ['TRITON_PRINT_AUTOTUNING'] = '1'  # Get the tuned optimal config
 # Writing all qk products to global memory is expensive, since it is proportional
 # to the square of the sequence length.
 # Note: BLOCK_Q should be equal to NUM_TOKENS_SCORE
-NUM_TOKENS_SCORE: tl.constexpr = 64
+NUM_TOKENS_SCORE = triton.language.constexpr(64)
 
 @triton.jit
 def cdiv_fn(x, y):
