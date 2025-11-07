@@ -191,7 +191,9 @@ def create_visualizations(data, datasets, modes, output_dir='comparison_plots'):
 
     # Create a large figure with multiple subplots
     fig, axes = plt.subplots(3, 2, figsize=(16, 14))
-    fig.suptitle('Convergence Mode Comparison Across Benchmarks', fontsize=16, fontweight='bold')
+    title = ('LLaMA-3-8B: Convergence Mode Comparison\n'
+             'Quant: K8/V4 (high), K4/V2 (low) | Thresholds: prune=0.02, quant=0.9, min_dist=0.7')
+    fig.suptitle(title, fontsize=14, fontweight='bold')
 
     # Prepare data for plotting
     plot_data = {metric: {mode: [] for mode in modes} for metric in METRICS.keys()}
