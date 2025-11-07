@@ -8,6 +8,7 @@ import pandas as pd
 from typing import List, Tuple, Optional, Union
 import numpy as np
 import time
+import torch
 from vllm import EngineArgs, LLMEngine, RequestOutput
 
 from vllm.dataset import (
@@ -88,15 +89,18 @@ def run_gsm_dataset(
     ''' Args
     num_lines: how many lines to batch
     '''
+    # Reset peak memory stats at the start
+    torch.cuda.reset_peak_memory_stats()
+
     dataset = GSM8kDataset(zero_shot=zero_shot)
     total_questions = len(dataset.dataset[label])
     print('total_questions = ', total_questions)
 
     # # 7473 questions in 'train'
-    # # 1319 questions in test   
-    # # for debug 
+    # # 1319 questions in test
+    # # for debug
     # dataset.data_ptr = 287113
-    
+
     quant_configs, quant_groups = get_quant_configs_and_groups(
         kbits_high, vbits_high, kbits_low, vbits_low)
     # print(f'quant_configs = {quant_configs}, quant_groups = {quant_groups}')
@@ -135,9 +139,14 @@ def run_gsm_dataset(
                         log_llm_stats(dataset, engine, log_path)
     
     # print(f'{time.time() - t0} seconds elapsed')
-    
+
     # log stats when the dataset is finished
     log_llm_stats(dataset, engine, log_path)
+
+    # Log peak GPU memory usage
+    peak_memory_bytes = torch.cuda.max_memory_allocated()
+    peak_memory_gb = peak_memory_bytes / (1024 ** 3)
+    print(f"PEAK_GPU_MEMORY_GB: {peak_memory_gb:.4f}", file=sys.stderr)
 
 def initialize_engine(args: argparse.Namespace) -> LLMEngine:
     """Initialize the LLMEngine from the command line arguments."""

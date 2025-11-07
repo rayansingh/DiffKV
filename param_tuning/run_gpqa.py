@@ -8,6 +8,7 @@ import pandas as pd
 from typing import List, Tuple, Optional, Union
 import numpy as np
 import time
+import torch
 
 from vllm import EngineArgs, LLMEngine, RequestOutput
 
@@ -106,6 +107,9 @@ def run_gpqa_cot_dataset(
         kbits_high, vbits_high, kbits_low, vbits_low,
         cot=(prompt_type == 'qwq'))
     compress_configs = [kv_prune_thresh, kv_quant_thresh]
+    
+    # Reset peak memory stats at the start
+    torch.cuda.reset_peak_memory_stats()
     # disable real-time perf logging
     engine.log_stats = not quiet
     
@@ -136,11 +140,21 @@ def run_gpqa_cot_dataset(
                     
                     if engine.scheduler.num_finished_seqs > 0 and engine.scheduler.num_finished_seqs % 10 == 0: 
                         log_llm_stats(dataset, engine, log_path)
+
+    # Log peak GPU memory usage
+    peak_memory_bytes = torch.cuda.max_memory_allocated()
+    peak_memory_gb = peak_memory_bytes / (1024 ** 3)
+    print(f"PEAK_GPU_MEMORY_GB: {peak_memory_gb:.4f}", file=sys.stderr)
     
     # print(f'{time.time() - t0} seconds elapsed')
     
     # log stats when the dataset is finished
     log_llm_stats(dataset, engine, log_path)
+
+    # Log peak GPU memory usage
+    peak_memory_bytes = torch.cuda.max_memory_allocated()
+    peak_memory_gb = peak_memory_bytes / (1024 ** 3)
+    print(f"PEAK_GPU_MEMORY_GB: {peak_memory_gb:.4f}", file=sys.stderr)
 
 def initialize_engine(args: argparse.Namespace) -> LLMEngine:
     """Initialize the LLMEngine from the command line arguments."""

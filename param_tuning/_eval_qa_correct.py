@@ -30,7 +30,8 @@ np.random.seed(666)
 
 # vllm config
 # GPUS = list(range(8))
-GPUS = list(range(0, 4))
+# GPUS = list(range(0, 4))
+GPUS = list(range(0, 1))
 GPU_MEM_UTIL = 0.97
 BATCH_SIZE = 256 # max number of concurrently running seqs in vllm
 # MAX_PADDING = 4096
@@ -102,10 +103,11 @@ def eval_qa_correct(
     
     all_num_correct = []    # number
     all_correctness = []    # percentage
-    
+
     all_num_seqs = []
     all_num_tokens = []
     all_num_baseline_blocks = []    # full FP16 KV cache blocks
+    all_peak_memory_gb = []  # track peak GPU memory
     cum_kv_lens = None
     cum_block_nums = None
     
@@ -198,7 +200,25 @@ def eval_qa_correct(
         print(f'*** gpu {GPUS[i]}\nstdout: {out}\n***')
         print(f'*** gpu {GPUS[i]}\nstderr: {err}\n***')
         # p.wait()
-        
+
+        # Parse peak GPU memory from stderr
+        peak_memory_gb = None
+        if err:
+            err_str = err.decode('utf-8') if isinstance(err, bytes) else str(err)
+            print(f'*** DEBUG: Searching for PEAK_GPU_MEMORY_GB in stderr (length: {len(err_str)} chars)')
+            for line in err_str.split('\n'):
+                if 'PEAK_GPU_MEMORY_GB:' in line:
+                    try:
+                        peak_memory_gb = float(line.split('PEAK_GPU_MEMORY_GB:')[1].strip())
+                        print(f'*** SUCCESS: Parsed peak GPU memory: {peak_memory_gb:.4f} GB')
+                        break
+                    except (ValueError, IndexError) as e:
+                        print(f'*** ERROR: Failed to parse peak memory from line: {line}, error: {e}')
+            if peak_memory_gb is None:
+                print(f'*** WARNING: PEAK_GPU_MEMORY_GB not found in stderr')
+        else:
+            print(f'*** WARNING: stderr is empty for process {i}')
+
         eval_log = eval_log_dirs[i]
         
         # TODO: read the eval metrics
@@ -240,6 +260,10 @@ def eval_qa_correct(
         # accuracy metrics
         all_num_correct.append(num_correct)
         all_correctness.append(num_correct / num_seqs)
+
+        # memory metrics
+        if peak_memory_gb is not None:
+            all_peak_memory_gb.append(peak_memory_gb)
         
         # / num_seqs cancel off for np.mean(partition_kv_len_np) & num_tokens
         _high_prec_ratio = np.mean(partition_kv_len_np[:, :, 0]) / num_tokens
@@ -284,15 +308,32 @@ def eval_qa_correct(
     # pretend to be noise-free
     noise_free_eval = {
         'correct_p': (unified_correctness * 100, 0),
-        'correctness': (unified_correctness, 0), 
+        'correctness': (unified_correctness, 0),
         'high_prec_ratio': (unified_high_prec_ratio, 0),
         'low_prec_ratio': (unified_low_prec_ratio, 0),
         'prune_ratio': (unified_prune_ratio, 0),
         'physical_compress_ratio': (unified_phy_compress_ratio, 0),
         'compress_ratio': (unified_compress_ratio, 0),
     }
+
+    # Always add peak memory columns (use 0.0 if unavailable)
+    if all_peak_memory_gb:
+        avg_peak_memory = np.mean(all_peak_memory_gb)
+        max_peak_memory = np.max(all_peak_memory_gb)
+        print(f'*** SUCCESS: Average peak GPU memory: {avg_peak_memory:.4f} GB, Max: {max_peak_memory:.4f} GB')
+        print(f'*** Peak memory values collected: {all_peak_memory_gb}')
+    else:
+        avg_peak_memory = 0.0
+        max_peak_memory = 0.0
+        print(f'*** WARNING: No peak memory values collected, using 0.0 for avg and max')
+
+    noise_free_eval['avg_peak_memory_gb'] = (avg_peak_memory, 0)
+    noise_free_eval['max_peak_memory_gb'] = (max_peak_memory, 0)
+
     pd.DataFrame({k: list(noise_free_eval[k]) for k in noise_free_eval}).to_csv(
                 f'{log_dir}/eval.csv')
+
+    print(f'*** eval.csv saved to {log_dir}/eval.csv with columns: {list(noise_free_eval.keys())}')
         
     
 
