@@ -182,7 +182,7 @@ def eval_codegen(
             rerun_cmd = all_cmds[i]
             print(f'*** rerun cmd: {rerun_cmd}')
             # rerun the failed pass
-            rerun_p = subprocess.Popen(rerun_cmd, shell=True, 
+            rerun_p = subprocess.Popen(rerun_cmd, shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             out, err = rerun_p.communicate()
@@ -194,13 +194,19 @@ def eval_codegen(
         peak_memory_gb = None
         if err:
             err_str = err.decode('utf-8') if isinstance(err, bytes) else str(err)
+            print(f'*** DEBUG: Searching for PEAK_GPU_MEMORY_GB in stderr (length: {len(err_str)} chars)')
             for line in err_str.split('\n'):
                 if 'PEAK_GPU_MEMORY_GB:' in line:
                     try:
                         peak_memory_gb = float(line.split('PEAK_GPU_MEMORY_GB:')[1].strip())
-                        print(f'*** Parsed peak GPU memory: {peak_memory_gb:.4f} GB')
+                        print(f'*** SUCCESS: Parsed peak GPU memory: {peak_memory_gb:.4f} GB')
+                        break
                     except (ValueError, IndexError) as e:
-                        print(f'*** Warning: Failed to parse peak memory from line: {line}, error: {e}')
+                        print(f'*** ERROR: Failed to parse peak memory from line: {line}, error: {e}')
+            if peak_memory_gb is None:
+                print(f'*** WARNING: PEAK_GPU_MEMORY_GB not found in stderr')
+        else:
+            print(f'*** WARNING: stderr is empty for process {i}')
 
         eval_log = eval_log_dirs[i]
         
@@ -304,16 +310,24 @@ def eval_codegen(
         'compress_ratio': (unified_compress_ratio, 0),
     }
 
-    # Add peak memory if available
+    # Always add peak memory columns (use 0.0 if unavailable)
     if all_peak_memory_gb:
         avg_peak_memory = np.mean(all_peak_memory_gb)
         max_peak_memory = np.max(all_peak_memory_gb)
-        noise_free_eval['avg_peak_memory_gb'] = (avg_peak_memory, 0)
-        noise_free_eval['max_peak_memory_gb'] = (max_peak_memory, 0)
-        print(f'*** Average peak GPU memory: {avg_peak_memory:.4f} GB, Max: {max_peak_memory:.4f} GB')
+        print(f'*** SUCCESS: Average peak GPU memory: {avg_peak_memory:.4f} GB, Max: {max_peak_memory:.4f} GB')
+        print(f'*** Peak memory values collected: {all_peak_memory_gb}')
+    else:
+        avg_peak_memory = 0.0
+        max_peak_memory = 0.0
+        print(f'*** WARNING: No peak memory values collected, using 0.0 for avg and max')
+
+    noise_free_eval['avg_peak_memory_gb'] = (avg_peak_memory, 0)
+    noise_free_eval['max_peak_memory_gb'] = (max_peak_memory, 0)
 
     pd.DataFrame({k: list(noise_free_eval[k]) for k in noise_free_eval}).to_csv(
                 f'{log_dir}/eval.csv')
+
+    print(f'*** eval.csv saved to {log_dir}/eval.csv with columns: {list(noise_free_eval.keys())}')
 
 
 def main(args: argparse.Namespace):
