@@ -69,9 +69,12 @@ def eval_qa_correct(
     label: str,
     zero_shot: bool,
     sample_rate: int,
-    log_dir: str, 
+    log_dir: str,
     promot_limit: int,
     reset_seed: bool = False,
+    # convergence parameters
+    kv_min_distance: float = None,
+    kv_convergence_mode: str = 'none',
 ):
     # we need to persist the params    
     config_d = {
@@ -168,6 +171,9 @@ def eval_qa_correct(
             # logging
             log_dir=eval_log,
             file_dir_path=FILE_DIR_PATH,
+            # convergence parameters
+            kv_min_distance=kv_min_distance,
+            kv_convergence_mode=kv_convergence_mode,
         )
         all_cmds.append(cmd)
         p = subprocess.Popen(cmd, shell=True, 
@@ -310,7 +316,7 @@ def main(args: argparse.Namespace):
         model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
     elif args.model == 'qwen2':
         assert model_size in [7, 32, 72]
-        model_name = f'/data1/modelscope/Qwen2.5-{model_size}B-Instruct'
+        model_name = f'Qwen/Qwen2.5-{model_size}B-Instruct'
     elif args.model == 'qwq':
         assert model_size in [32]
         model_name = f'/data1/modelscope/QwQ-{model_size}B'
@@ -419,9 +425,12 @@ def main(args: argparse.Namespace):
             label=label,
             zero_shot=args.zero_shot,
             sample_rate=sample_rate,
-            log_dir=round_log_path, 
+            log_dir=round_log_path,
             promot_limit=prompt_limit,
-            reset_seed=rounds > 1)
+            reset_seed=rounds > 1,
+            # convergence parameters
+            kv_min_distance=args.kv_min_distance,
+            kv_convergence_mode=args.kv_convergence_mode)
         
         print(f'{args.dataset} '
               f'k{args.kbits_high}v{args.vbits_high}-k{args.kbits_low}v{args.vbits_low} '
@@ -455,7 +464,12 @@ if __name__ == "__main__":
     parser.add_argument('--vbits-low', type=int, required=True)
     parser.add_argument('--kv-prune-thresh', type=float, required=True)
     parser.add_argument('--kv-quant-thresh', type=float, required=True)
-    
+
+    # convergence parameters
+    parser.add_argument('--kv-min-distance', type=float, default=None)
+    parser.add_argument('--kv-convergence-mode', type=str, default='none',
+                        choices=['none', 'linear', 'logarithmic'])
+
     # model config
     parser.add_argument('--model', type=str, default='llama')
     parser.add_argument('--model-gen', type=int, required=True)

@@ -10,6 +10,7 @@ ALLOWED_MSG = [LLAMA3_WARNING,
                ' -- Started a local Ray instance.',
                'Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources.',
                'Using the latest cached version of the dataset',
+                '`torch_dtype` is deprecated! Use `dtype` instead!'
                ]
 
 # return True if error exists
@@ -38,7 +39,7 @@ def compose_cmd(
     dataset: str,
     model_size: int,
     model_name: str,
-    gpu_id: Union[int, List[int]], 
+    gpu_id: Union[int, List[int]],
     max_num_seqs: int,
     buffer_size: int,
     # compression configs
@@ -62,6 +63,9 @@ def compose_cmd(
     # dataset default
     zero_shot: bool = False,
     sample_rate: Optional[int] = None,
+    # convergence parameters
+    kv_min_distance: Optional[float] = None,
+    kv_convergence_mode: str = 'none',
 ) -> str:
     assert dataset in [
         'wiki',
@@ -123,13 +127,17 @@ def compose_cmd(
         cmd += ' --zero-shot'
     if sample_rate:
         cmd += f' --sample-rate {sample_rate}'
+    if kv_min_distance is not None:
+        cmd += f' --kv-min-distance {kv_min_distance}'
+    if kv_convergence_mode != 'none':
+        cmd += f' --kv-convergence-mode {kv_convergence_mode}'
     return cmd
 
 def compose_codegen_cmd(
     dataset: str,
     model_size: int,
     model_name: str,
-    gpu_id: Union[int, List[int]], 
+    gpu_id: Union[int, List[int]],
     max_num_seqs: int,
     buffer_size: int,
     # compression configs
@@ -152,12 +160,15 @@ def compose_codegen_cmd(
     # logging
     log_dir: str,
     file_dir_path: str,
+    # convergence parameters
+    kv_min_distance: Optional[float] = None,
+    kv_convergence_mode: str = 'none',
 ):
     cmd = compose_cmd(
         dataset=dataset,
         model_size=model_size,
         model_name=model_name,
-        gpu_id=gpu_id, 
+        gpu_id=gpu_id,
         max_num_seqs=max_num_seqs,
         buffer_size=buffer_size,
         # compression configs
@@ -178,6 +189,9 @@ def compose_codegen_cmd(
         # logging
         log_dir=log_dir,
         file_dir_path=file_dir_path,
+        # convergence parameters
+        kv_min_distance=kv_min_distance,
+        kv_convergence_mode=kv_convergence_mode,
     )
     
     cmd += (f' --sampling-n {sampling_n} '

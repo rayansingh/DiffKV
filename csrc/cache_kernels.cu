@@ -225,6 +225,8 @@ __global__ void compress_and_append_cache_prompt_phase_kernel(
   int* __restrict__ kv_len_tables,                   // [num_slots, num_layers, num_kv_heads, 2]
   const int* __restrict__ seq_start_loc,             // [num_seqs + 1]
   const float* __restrict__ compress_config_tables,  // [num_slots, 2]
+  const float kv_min_distance,                       // Minimum distance between prune and quant thresholds
+  const int kv_convergence_mode,                     // 0=none, 1=linear, 2=logarithmic
   const int max_prompt_len,
   const int kv_buffer_size,
   const int layer_idx,
@@ -347,10 +349,33 @@ __global__ void compress_and_append_cache_prompt_phase_kernel(
   static_assert(NUM_K_PACKS_HIGH % (K_VEC_SIZE * CHUNKS_K_HIGH) == 0);
   static_assert(NUM_K_PACKS_LOW % (K_VEC_SIZE * CHUNKS_K_LOW) == 0);
 
-  // Compute actual threshold
+  // Compute actual threshold with optional layer-dependent convergence
   const float base_threshold = 1.0f / prompt_len;
-  const float prune_threshold = base_threshold * compress_config_tables[slot_idx * 2 + 0];
-  const float quant_threshold = base_threshold * compress_config_tables[slot_idx * 2 + 1];
+
+  // Get base ratios from config table
+  float prune_ratio = compress_config_tables[slot_idx * 2 + 0];
+  const float quant_ratio = compress_config_tables[slot_idx * 2 + 1];
+
+  // Apply layer-dependent convergence if enabled
+  if (kv_convergence_mode > 0 && num_layers > 1) {
+    const float depth_ratio = (float)layer_idx / (float)(num_layers - 1);
+    const float target_prune = quant_ratio - kv_min_distance;
+
+    // Only converge if there's a gap to close
+    if (target_prune > prune_ratio) {
+      const float convergence_range = target_prune - prune_ratio;
+
+      if (kv_convergence_mode == 1) {  // Linear
+        prune_ratio = prune_ratio + convergence_range * depth_ratio;
+      } else if (kv_convergence_mode == 2) {  // Logarithmic
+        const float log_scale = logf(1.0f + depth_ratio * (M_E - 1.0f));
+        prune_ratio = prune_ratio + convergence_range * log_scale;
+      }
+    }
+  }
+
+  const float prune_threshold = base_threshold * prune_ratio;
+  const float quant_threshold = base_threshold * quant_ratio;
 
   assert(prune_threshold >= 0 && prune_threshold <= 1);
   assert(quant_threshold >= 0 && quant_threshold <= 1);
@@ -754,6 +779,8 @@ __global__ void compress_and_append_cache_decode_phase_kernel(
   const int* __restrict__ block_tables,              // [num_slots, num_layers, num_kv_heads, max_num_blocks_per_seq]
   int* __restrict__ kv_len_tables,                   // [num_slots, num_layers, num_kv_heads, 2]
   const float* __restrict__ compress_config_tables,  // [num_slots, 2]
+  const float kv_min_distance,                       // Minimum distance between prune and quant thresholds
+  const int kv_convergence_mode,                     // 0=none, 1=linear, 2=logarithmic
   const int max_context_len,
   const int kv_buffer_size,
   const int layer_idx,
@@ -998,12 +1025,35 @@ __global__ void compress_and_append_cache_decode_phase_kernel(
     float min_score_right = s_min_scores[0];
     int min_idx_right = s_min_idxs[0];
 
-    // Compute actual threshold
+    // Compute actual threshold with optional layer-dependent convergence
     // TODO: investigate using 1.0f / context_len (KV length) here
     // const float base_threshold = 1.0f / context_len;
     const float base_threshold = 1.0f / position;
-    const float prune_threshold = base_threshold * compress_config_tables[slot_idx * 2 + 0];
-    const float quant_threshold = base_threshold * compress_config_tables[slot_idx * 2 + 1];
+
+    // Get base ratios from config table
+    float prune_ratio = compress_config_tables[slot_idx * 2 + 0];
+    const float quant_ratio = compress_config_tables[slot_idx * 2 + 1];
+
+    // Apply layer-dependent convergence if enabled
+    if (kv_convergence_mode > 0 && num_layers > 1) {
+      const float depth_ratio = (float)layer_idx / (float)(num_layers - 1);
+      const float target_prune = quant_ratio - kv_min_distance;
+
+      // Only converge if there's a gap to close
+      if (target_prune > prune_ratio) {
+        const float convergence_range = target_prune - prune_ratio;
+
+        if (kv_convergence_mode == 1) {  // Linear
+          prune_ratio = prune_ratio + convergence_range * depth_ratio;
+        } else if (kv_convergence_mode == 2) {  // Logarithmic
+          const float log_scale = logf(1.0f + depth_ratio * (M_E - 1.0f));
+          prune_ratio = prune_ratio + convergence_range * log_scale;
+        }
+      }
+    }
+
+    const float prune_threshold = base_threshold * prune_ratio;
+    const float quant_threshold = base_threshold * quant_ratio;
 
     assert(prune_threshold >= 0 && prune_threshold <= 1);
     assert(quant_threshold >= 0 && quant_threshold <= 1);
@@ -1369,6 +1419,8 @@ void reshape_and_cache(
     kv_len_tables.data_ptr<int>(),                     \
     seq_start_loc.data_ptr<int>(),                     \
     compress_config_tables.data_ptr<float>(),          \
+    kv_min_distance,                                   \
+    kv_convergence_mode,                               \
     max_prompt_len,                                    \
     kv_buffer_size,                                    \
     layer_idx,                                         \
@@ -1446,6 +1498,9 @@ void compress_and_append_cache_prompt_phase(
   torch::Tensor& kv_len_tables,          // [num_slots, num_layers, num_kv_heads, 2]
   torch::Tensor& seq_start_loc,          // [num_seqs + 1]
   torch::Tensor& compress_config_tables, // [num_slots, 2] (prune_ratio, quant_ratio)
+  const float kv_min_distance,
+  const int kv_convergence_mode,
+  const int num_layers_param,
   const int kv_buffer_size,
   const int layer_idx,
   const int num_bits_k_high,
@@ -1551,6 +1606,8 @@ void compress_and_append_cache_prompt_phase(
     block_tables.data_ptr<int>(),                     \
     kv_len_tables.data_ptr<int>(),                    \
     compress_config_tables.data_ptr<float>(),         \
+    kv_min_distance,                                  \
+    kv_convergence_mode,                              \
     max_context_len,                                  \
     kv_buffer_size,                                   \
     layer_idx,                                        \
@@ -1624,6 +1681,9 @@ void compress_and_append_cache_decode_phase(
   torch::Tensor& block_tables,           // [num_slots, num_layers, num_kv_heads, max_num_blocks_per_seq]
   torch::Tensor& kv_len_tables,          // [num_slots, num_layers, num_kv_heads, 2]
   torch::Tensor& compress_config_tables, // [num_slots, 2] (prune_ratio, quant_ratio)
+  const float kv_min_distance,
+  const int kv_convergence_mode,
+  const int num_layers_param,
   const int max_context_len,
   const int kv_buffer_size,
   const int layer_idx,

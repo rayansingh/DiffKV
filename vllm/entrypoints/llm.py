@@ -2,6 +2,7 @@ from typing import List, Optional, Union, Tuple
 
 from tqdm import tqdm
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
+import torch
 
 from vllm.engine.arg_utils import EngineArgs
 from vllm.engine.llm_engine import LLMEngine
@@ -157,6 +158,9 @@ class LLM:
             # Use default sampling params.
             sampling_params = SamplingParams()
 
+        # Reset peak memory stats before generation
+        torch.cuda.reset_peak_memory_stats()
+
         # Add requests to the engine.
         num_requests = len(prompts) if prompts is not None else len(
             prompt_token_ids)
@@ -206,4 +210,11 @@ class LLM:
         # This is necessary because some requests may be finished earlier than
         # its previous requests.
         outputs = sorted(outputs, key=lambda x: int(x.request_id))
+
+        # Log peak GPU memory usage
+        peak_memory_bytes = torch.cuda.max_memory_allocated()
+        peak_memory_gb = peak_memory_bytes / (1024 ** 3)
+        import sys
+        print(f"PEAK_GPU_MEMORY_GB: {peak_memory_gb:.4f}", file=sys.stderr)
+
         return outputs

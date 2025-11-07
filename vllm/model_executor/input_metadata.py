@@ -37,6 +37,10 @@ class InputMetadata:
         num_chunks_k_low: int,
         num_chunks_v_low: int,
         compress_config_tables: Optional[torch.Tensor],
+        # layer-dependent threshold convergence
+        kv_min_distance: float,
+        kv_convergence_mode: str,
+        num_layers: int,
         # cache block layout
         key_vec_size: int,
         val_vec_size: int,
@@ -63,8 +67,16 @@ class InputMetadata:
         self.num_chunks_v_high = num_chunks_v_high
         self.num_chunks_k_low  = num_chunks_k_low
         self.num_chunks_v_low  = num_chunks_v_low
-        
+
         self.compress_config_tables = compress_config_tables
+
+        # layer-dependent threshold convergence
+        self.kv_min_distance = kv_min_distance
+        self.kv_convergence_mode = kv_convergence_mode
+        self.num_layers = num_layers
+        # Convert convergence mode string to int for CUDA
+        mode_map = {'none': 0, 'linear': 1, 'logarithmic': 2}
+        self.kv_convergence_mode_int = mode_map.get(kv_convergence_mode, 0)
 
         # cache block layout
         self.key_vec_size = key_vec_size

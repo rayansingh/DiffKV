@@ -27,6 +27,8 @@ class EngineArgs:
     swap_space: int = 4  # GiB
     kv_buffer_size: int = 64
     kv_compress_config: Optional[str] = None
+    kv_min_distance: Optional[float] = None
+    kv_convergence_mode: str = 'none'
     max_kv_slots: Optional[int] = None
     gpu_memory_utilization: float = 0.90
     max_num_batched_tokens: Optional[int] = 40960
@@ -168,6 +170,20 @@ class EngineArgs:
                             type=str,
                             default=EngineArgs.kv_compress_config,
                             help='Config csv file for kv cache compression')
+        parser.add_argument('--kv-min-distance',
+                            type=float,
+                            default=None,
+                            help='Minimum distance between prune and quant thresholds '
+                            'at deepest layer. If None, uses original gap (no convergence). '
+                            'Must be positive and <= original gap.')
+        parser.add_argument('--kv-convergence-mode',
+                            type=str,
+                            choices=['none', 'linear', 'logarithmic'],
+                            default='none',
+                            help='How prune threshold converges toward quant threshold '
+                            'across layers. "none": no convergence (default), '
+                            '"linear": linear interpolation, '
+                            '"logarithmic": logarithmic approach (slow early, fast late)')
         parser.add_argument('--max-kv-slots',
                             type=int,
                             default=EngineArgs.max_kv_slots,
@@ -251,7 +267,9 @@ class EngineArgs:
                                    self.swap_space,
                                    kv_buffer_size,
                                    self.max_kv_slots,
-                                   model_config.get_sliding_window())
+                                   model_config.get_sliding_window(),
+                                   kv_min_distance=self.kv_min_distance,
+                                   kv_convergence_mode=self.kv_convergence_mode)
         parallel_config = ParallelConfig(self.pipeline_parallel_size,
                                          self.tensor_parallel_size,
                                          self.worker_use_ray,

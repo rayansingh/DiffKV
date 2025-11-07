@@ -21,7 +21,8 @@ np.random.seed(666)
 
 # vllm config
 # GPUS = list(range(8))
-GPUS = list(range(0, 4))
+# GPUS = list(range(0, 4))
+GPUS = list(range(0,1))
 # GPUS = [4]
 GPU_MEM_UTIL = 0.75
 BATCH_SIZE = 256 # max number of concurrently running seqs in vllm
@@ -60,11 +61,14 @@ def eval_codegen(
     kv_quant_thresh: float,
     # miscs
     label: str,
-    log_dir: str, 
+    log_dir: str,
     sampling_n: int,
     temperature: float,
     promot_limit: int,
     reset_seed: bool = False,
+    # convergence parameters
+    kv_min_distance: float = None,
+    kv_convergence_mode: str = 'none',
 ):
     # we need to persist the params    
     config_d = {
@@ -93,10 +97,11 @@ def eval_codegen(
     # accuracy metrics
     all_num_correct = []
     all_correctness = []
-    
+
     all_num_seqs = []
     all_num_tokens = []
     all_num_baseline_blocks = []    # full FP16 KV cache blocks
+    all_peak_memory_gb = []  # track peak GPU memory
     cum_kv_lens = None
     cum_block_nums = None
     
@@ -158,6 +163,9 @@ def eval_codegen(
             # logging
             log_dir=eval_log,
             file_dir_path=FILE_DIR_PATH,
+            # convergence parameters
+            kv_min_distance=kv_min_distance,
+            kv_convergence_mode=kv_convergence_mode,
         )
         all_cmds.append(cmd)
         p = subprocess.Popen(cmd, shell=True, 
@@ -179,9 +187,21 @@ def eval_codegen(
                                        stderr=subprocess.PIPE)
             out, err = rerun_p.communicate()
         # assert len(err) == 0
-        print(f'*** gpu {GPUS[i]}\nstdout: {out}\n***')
+        print(f'*** gpu {GPUS[i]}\nstdout: {out}\nstderr: {err}\n***')
         # p.wait()
-        
+
+        # Parse peak GPU memory from stderr
+        peak_memory_gb = None
+        if err:
+            err_str = err.decode('utf-8') if isinstance(err, bytes) else str(err)
+            for line in err_str.split('\n'):
+                if 'PEAK_GPU_MEMORY_GB:' in line:
+                    try:
+                        peak_memory_gb = float(line.split('PEAK_GPU_MEMORY_GB:')[1].strip())
+                        print(f'*** Parsed peak GPU memory: {peak_memory_gb:.4f} GB')
+                    except (ValueError, IndexError) as e:
+                        print(f'*** Warning: Failed to parse peak memory from line: {line}, error: {e}')
+
         eval_log = eval_log_dirs[i]
         
         # TODO: read the eval metrics
@@ -223,6 +243,10 @@ def eval_codegen(
         # accuracy metrics
         all_num_correct.append(num_correct)
         all_correctness.append(num_correct / num_seqs)
+
+        # memory metrics
+        if peak_memory_gb is not None:
+            all_peak_memory_gb.append(peak_memory_gb)
         
         # / num_seqs cancel off for np.mean(partition_kv_len_np) & num_tokens
         _high_prec_ratio = np.mean(partition_kv_len_np[:, :, 0]) / num_tokens
@@ -248,6 +272,11 @@ def eval_codegen(
             'compress_ratio': [_compress_ratio],
         }
         pd.DataFrame(mem_df).to_csv(f'{eval_log}/compress_ratio.csv')
+
+        # Save peak GPU memory if available
+        if peak_memory_gb is not None:
+            peak_mem_df = {'peak_memory_gb': [peak_memory_gb]}
+            pd.DataFrame(peak_mem_df).to_csv(f'{eval_log}/peak_memory.csv')
                 
     # unified_rogue = np.sum(cum_f1) / np.sum(all_num_seqs) * 1000
     unified_correctness = np.sum(all_num_correct) / np.sum(all_num_seqs)
@@ -267,13 +296,22 @@ def eval_codegen(
     # pretend to be noise-free
     noise_free_eval = {
         'correct_p': (unified_correctness * 100, 0),
-        'correctness': (unified_correctness, 0), 
+        'correctness': (unified_correctness, 0),
         'high_prec_ratio': (unified_high_prec_ratio, 0),
         'low_prec_ratio': (unified_low_prec_ratio, 0),
         'prune_ratio': (unified_prune_ratio, 0),
         'physical_compress_ratio': (unified_phy_compress_ratio, 0),
         'compress_ratio': (unified_compress_ratio, 0),
     }
+
+    # Add peak memory if available
+    if all_peak_memory_gb:
+        avg_peak_memory = np.mean(all_peak_memory_gb)
+        max_peak_memory = np.max(all_peak_memory_gb)
+        noise_free_eval['avg_peak_memory_gb'] = (avg_peak_memory, 0)
+        noise_free_eval['max_peak_memory_gb'] = (max_peak_memory, 0)
+        print(f'*** Average peak GPU memory: {avg_peak_memory:.4f} GB, Max: {max_peak_memory:.4f} GB')
+
     pd.DataFrame({k: list(noise_free_eval[k]) for k in noise_free_eval}).to_csv(
                 f'{log_dir}/eval.csv')
 
@@ -298,7 +336,7 @@ def main(args: argparse.Namespace):
         model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
     elif args.model == 'qwen2':
         assert model_size in [7, 32, 72]
-        model_name = f'/data1/modelscope/Qwen2.5-{model_size}B-Instruct'
+        model_name = f'Qwen/Qwen2.5-{model_size}B-Instruct'
     elif args.model == 'qwq':
         assert model_size in [32]
         model_name = f'/data1/modelscope/QWQ-{model_size}B'
@@ -368,10 +406,13 @@ def main(args: argparse.Namespace):
             kv_quant_thresh=args.kv_quant_thresh,
             # miscs
             label=label,
-            log_dir=round_log_path, 
+            log_dir=round_log_path,
             sampling_n=args.sampling_n,
             temperature=args.temperature,
             promot_limit=prompt_limit,
+            # convergence parameters
+            kv_min_distance=args.kv_min_distance,
+            kv_convergence_mode=args.kv_convergence_mode,
             reset_seed=rounds > 1)
         
         print(f'{args.dataset} '
@@ -399,7 +440,12 @@ if __name__ == "__main__":
     parser.add_argument('--vbits-low', type=int, required=True)
     parser.add_argument('--kv-prune-thresh', type=float, required=True)
     parser.add_argument('--kv-quant-thresh', type=float, required=True)
-    
+
+    # convergence parameters
+    parser.add_argument('--kv-min-distance', type=float, default=None)
+    parser.add_argument('--kv-convergence-mode', type=str, default='none',
+                        choices=['none', 'linear', 'logarithmic'])
+
     # model config
     parser.add_argument('--model', type=str, default='llama')
     parser.add_argument('--model-gen', type=int, required=True)

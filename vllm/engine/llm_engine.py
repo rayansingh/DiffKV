@@ -248,7 +248,9 @@ class LLMEngine:
         # Create the sequence group.
         seq_group = SequenceGroup(request_id, [seq], sampling_params,
                                   arrival_time,
-                                  quant_configs, quant_groups, compress_configs)
+                                  quant_configs, quant_groups, compress_configs,
+                                  self.cache_config.kv_min_distance,
+                                  self.cache_config.kv_convergence_mode)
 
         # Add the sequence group to the scheduler.
         self.scheduler.add_seq_group(seq_group)

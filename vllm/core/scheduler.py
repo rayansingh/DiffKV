@@ -535,6 +535,8 @@ class Scheduler:
                 num_chunks_v_high=seq_group.quant_groups[1],
                 num_chunks_k_low=seq_group.quant_groups[2],
                 num_chunks_v_low=seq_group.quant_groups[3],
+                kv_min_distance=seq_group.kv_min_distance,
+                kv_convergence_mode=seq_group.kv_convergence_mode,
             )
             seq_group_metadata_list.append(seq_group_metadata)
         return seq_group_metadata_list, scheduler_outputs

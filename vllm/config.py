@@ -313,10 +313,14 @@ class CacheConfig:
         num_thread_groups_k: int = 8,
         memory_align_bytes: int = 32,
         memory_align_bytes_kv: int = 128,
+        kv_min_distance: Optional[float] = None,
+        kv_convergence_mode: str = 'none',
     ) -> None:
         self.gpu_memory_utilization = gpu_memory_utilization
         self.swap_space_bytes = swap_space * _GB
         self.sliding_window = sliding_window
+        self.kv_min_distance = kv_min_distance
+        self.kv_convergence_mode = kv_convergence_mode
         self._verify_args()
 
         # kv cache config

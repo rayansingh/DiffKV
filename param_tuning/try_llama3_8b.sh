@@ -1,52 +1,26 @@
-export PYTHONPATH=/home/zhangyanqi/git_repos/DiffKV:$PYTHONPATH
-# ******** gsm8k 88-88
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 2.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 3.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 4.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 5.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset gsm8k --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.1 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-# ******** minerva_math 88-88
-python3 _eval_qa_correct.py --dataset minerva_math --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset minerva_math --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset minerva_math --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset minerva_math --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset minerva_math --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset minerva_math --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
+#!/bin/bash
+export PYTHONPATH=/workspace/DiffKV:$PYTHONPATH
+#---------------------------------- LLaMA-3-8B with linear convergence
+# Configuration: prune_thresh=0.02, quant_thresh=1.0 (DiffKV author settings from benchmark_throughput.sh)
+# Quantization: 8-bit high (keys), 4-bit high (values), 4-bit low (keys), 2-bit low (values)
+# Convergence: linear mode with min_distance=0.1
+
+# # ******** gsm8k
+# python3 _eval_qa_correct.py --model llama --dataset gsm8k --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.1 --kv-convergence-mode linear
+
+# # ******** minerva_math
+# python3 _eval_qa_correct.py --model llama --dataset minerva_math --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.1 --kv-convergence-mode linear
+
 # ******** humaneval
-python3 _eval_codegen.py --dataset humaneval --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset humaneval --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset humaneval --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset humaneval --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset humaneval --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset humaneval --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
+python3 _eval_codegen.py --model llama --dataset humaneval --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.8 --kv-convergence-mode none
+python3 _eval_codegen.py --model llama --dataset humaneval --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.8 --kv-convergence-mode linear
+python3 _eval_codegen.py --model llama --dataset humaneval --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.8 --kv-convergence-mode logarithmic
+
 # # ******** mbpp_plus
-python3 _eval_codegen.py --dataset mbpp_plus --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset mbpp_plus --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset mbpp_plus --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset mbpp_plus --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset mbpp_plus --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --dataset mbpp_plus --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-# ******** mmlu 84-42
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 2.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 3.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 4.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 5.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.10 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-# ******** mmlu-pro 84-42
-python3 _eval_qa_correct.py --dataset mmlu_pro_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_pro_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_pro_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 0.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_pro_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_pro_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --dataset mmlu_pro_cot --model-gen 3 --model-size 8  --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3
-# ******** longbench 88-88
-# python3 run_longbench.py --model-gen 3.1 --model-size 8  --log-path ../logs/emulate_5rounds/llama3.1-8b --attn-prune-thresh 0 --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 1.0 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1
+# python3 _eval_codegen.py --model llama --dataset mbpp_plus --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.1 --kv-convergence-mode linear
+
+# # ******** mmlu
+# python3 _eval_qa_correct.py --model llama --dataset mmlu_cot --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.1 --kv-convergence-mode linear
+
+# # ******** mmlu-pro
+# python3 _eval_qa_correct.py --model llama --dataset mmlu_pro_cot --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.1 --kv-convergence-mode linear

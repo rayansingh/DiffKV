@@ -243,16 +243,18 @@ class SequenceGroup:
         quant_configs: List[int],
         quant_groups: List[int],
         compress_configs: List[float],
+        kv_min_distance: Optional[float] = None,
+        kv_convergence_mode: str = 'none',
     ) -> None:
         self.request_id = request_id
         self.seqs_dict = {seq.seq_id: seq for seq in seqs}
         self.sampling_params = sampling_params
         self.arrival_time = arrival_time
         self.prompt_logprobs: Optional[PromptLogprobs] = None
-        
+
         # used in scheduler to decide how much memory is allocated to the group
         self.is_decode = False
-        
+
         # kv pruning configs
         # assert len(compress_configs) == 4
         # _prune_thresh, _quant_thresh, _prune_ratio, _quant_ratio = compress_configs
@@ -261,15 +263,30 @@ class SequenceGroup:
         # assert _prune_ratio >= 0 and _prune_ratio <= 1
         # assert _quant_ratio >= 0 and _quant_ratio <= _prune_ratio
         # self.compress_configs = compress_configs
-        
+
         assert len(compress_configs) == 2
         _prune_ratio, _quant_ratio = compress_configs
-        
+
         # print(_prune_ratio, _quant_ratio)
-        
+
         assert _prune_ratio >= 0 and _prune_ratio <= 1
-        assert _quant_ratio >= 0 and _quant_ratio >= _prune_ratio        
+        assert _quant_ratio >= 0 and _quant_ratio >= _prune_ratio
         self.compress_configs = compress_configs
+
+        # Layer-dependent threshold convergence configs
+        self.kv_convergence_mode = kv_convergence_mode
+
+        # Compute effective min_distance
+        original_gap = _quant_ratio - _prune_ratio
+        if kv_min_distance is None:
+            # Default: use original gap (no convergence)
+            self.kv_min_distance = original_gap
+        else:
+            # User-specified
+            assert kv_min_distance > 0, "kv_min_distance must be positive"
+            assert kv_min_distance <= original_gap, \
+                f"kv_min_distance ({kv_min_distance}) cannot exceed original gap ({original_gap:.4f})"
+            self.kv_min_distance = kv_min_distance
         
         # kv quantization configs
         assert len(quant_configs) == 2 or len(quant_configs) == 4
@@ -407,6 +424,8 @@ class SequenceGroupMetadata:
         num_chunks_v_high: Optional[int],
         num_chunks_k_low: Optional[int],
         num_chunks_v_low: Optional[int],
+        kv_min_distance: Optional[float] = None,
+        kv_convergence_mode: Optional[str] = None,
     ) -> None:
         '''
         NOTE: block_tables & kv_lens should be set on the worker side
@@ -421,11 +440,15 @@ class SequenceGroupMetadata:
         self.num_bits_v_high = num_bits_v_high
         self.num_bits_k_low  = num_bits_k_low
         self.num_bits_v_low  = num_bits_v_low
-        
+
         self.num_chunks_k_high = num_chunks_k_high
         self.num_chunks_v_high = num_chunks_v_high
         self.num_chunks_k_low  = num_chunks_k_low
         self.num_chunks_v_low  = num_chunks_v_low
+
+        # convergence config
+        self.kv_min_distance = kv_min_distance
+        self.kv_convergence_mode = kv_convergence_mode
 
 
 class SequenceOutput:

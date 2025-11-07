@@ -10,18 +10,21 @@ model = LLM(
     # 'meta-llama/Llama-2-7b-chat-hf',
     # 'meta-llama/Meta-Llama-3-8B-Instruct',
     # 'meta-llama/Llama-2-7b-chat-hf',
-    # 'mistralai/Mistral-7B-Instruct-v0.1',
+    'mistralai/Mistral-7B-Instruct-v0.1',
     # 'mistralai/Mixtral-8x7B-Instruct-v0.1',
     # '/data1/modelscope/Qwen3-14B',
-    '/data1/modelscope/Qwen2.5-7B-Instruct',
+    # '/data1/modelscope/Qwen2.5-7B-Instruct',
     dtype='float16',
     gpu_memory_utilization=0.8,
     load_format='safetensors',
     kv_buffer_size=256,
     tensor_parallel_size=1,
     # download_dir='/data1/huggingface',
-    download_dir='/data1/modelscope',
-    enforce_eager=True)
+    # download_dir='/data1/modelscope',
+    enforce_eager=True,
+    # Layer-dependent threshold convergence
+    kv_min_distance=0.1,
+    kv_convergence_mode='linear')
 
 MAX_TOKENS = 2048
 MAX_TOKENS = 512
