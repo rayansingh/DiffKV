@@ -1,5 +1,6 @@
 from typing import List, Union, Optional, Tuple
 import os
+import sys
 
 # log filtering
 LLAMA3_WARNING = ('Special tokens have been added in the vocabulary, '
@@ -98,7 +99,7 @@ def compose_cmd(
     assert os.path.isfile(f'{file_dir_path}/{script_name}')
     
     cmd = (f'CUDA_VISIBLE_DEVICES={_gpu_id} RAY_DEDUP_LOGS=0 '
-           f'python3 {file_dir_path}/{script_name} '
+           f'{sys.executable} {file_dir_path}/{script_name} '
            f'--model {model_name} '
            '--load-format safetensors '
            '--download-dir /data1/huggingface '

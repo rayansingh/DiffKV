@@ -38,6 +38,20 @@ DiffKV supports model weight quantization using [GPTQ](https://arxiv.org/abs/221
 pip install -e .
 ```
 
+#### Activate Virtual Environment:
+
+If DiffKV is installed in a virtual environment (e.g., `/venv/main`), activate it before running any scripts:
+
+```bash
+source /venv/main/bin/activate
+```
+
+Alternatively, you can use the virtual environment's Python directly without activation:
+
+```bash
+/venv/main/bin/python3 <script.py>
+```
+
 
 ## Usage
 

@@ -1,37 +1,21 @@
-export PYTHONPATH=/home/zhangyanqi/git_repos/DiffKV:$PYTHONPATH
-# ******** gsm8k 88-88
-python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.04 --kv-quant-thresh 0.04   --kv-buffer 64 --rounds 3
-# # ******** minerva_math 88-88
-python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.04 --kv-quant-thresh 0.04   --kv-buffer 64 --rounds 3
-# # ******** humaneval
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0  --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 0.02  --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.04 --kv-quant-thresh 0.04  --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08 --kv-quant-thresh 0.08  --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.10 --kv-quant-thresh 0.10  --kv-buffer 64 --rounds 3
-# ******** mbpp_plus
-python3 _eval_codegen.py --model qwen2 --dataset mbpp_plus --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset mbpp_plus --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset mbpp_plus --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_codegen.py --model qwen2 --dataset mbpp_plus --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.04  --kv-quant-thresh 0.04  --kv-buffer 64 --rounds 3
-# ******** mmlu 84-42
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.04  --kv-quant-thresh 0.04  --kv-buffer 64 --rounds 3
-# ******** mmlu-pro 84-42
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 8 --kbits-low 8 --vbits-low 8 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 4 --vbits-high 4 --kbits-low 4 --vbits-low 4 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.0   --kv-quant-thresh 0.0   --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02  --kv-quant-thresh 0.02  --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.04  --kv-quant-thresh 0.04  --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.08  --kv-quant-thresh 0.08  --kv-buffer 64 --rounds 3
-python3 _eval_qa_correct.py --model qwen2 --dataset mmlu_pro_cot --model-gen 2 --model-size 7  --log-path ../logs/per_token_thresh/qwen25-7b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.1   --kv-quant-thresh 0.1   --kv-buffer 64 --rounds 3
+#!/bin/bash
+export PYTHONPATH=/workspace/DiffKV:$PYTHONPATH
+#---------------------------------- LLaMA-3-8B with linear convergence
+# Configuration: prune_thresh=0.02, quant_thresh=1.0 (DiffKV author settings from benchmark_throughput.sh)
+# Quantization: 8-bit high (keys), 4-bit high (values), 4-bit low (keys), 2-bit low (values)
+# Convergence: linear mode with min_distance=0.1
+
+# # ******** gsm8k
+python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode none
+python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode linear
+python3 _eval_qa_correct.py --model qwen2 --dataset gsm8k --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode logarithmic
+
+# ******** minerva_math
+python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode none
+python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode linear
+python3 _eval_qa_correct.py --model qwen2 --dataset minerva_math --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode logarithmic
+
+# ******** humaneval
+python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode none
+python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode linear
+python3 _eval_codegen.py --model qwen2 --dataset humaneval --model-gen 2 --model-size 7 --log-path ../logs/per_token_thresh/qwen25-7b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode logarithmic
