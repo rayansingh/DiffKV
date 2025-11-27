@@ -143,10 +143,15 @@ def run_gsm_dataset(
     # log stats when the dataset is finished
     log_llm_stats(dataset, engine, log_path)
 
-    # Log peak GPU memory usage
-    peak_memory_bytes = torch.cuda.max_memory_allocated()
-    peak_memory_gb = peak_memory_bytes / (1024 ** 3)
-    print(f"PEAK_GPU_MEMORY_GB: {peak_memory_gb:.4f}", file=sys.stderr)
+    # Log peak GPU memory usage across all GPUs
+    num_gpus = torch.cuda.device_count()
+    total_peak_memory_bytes = sum(torch.cuda.max_memory_allocated(i) for i in range(num_gpus))
+    total_peak_memory_gb = total_peak_memory_bytes / (1024 ** 3)
+    print(f"PEAK_GPU_MEMORY_GB: {total_peak_memory_gb:.4f}", file=sys.stderr)
+    # Also log per-GPU breakdown
+    for i in range(num_gpus):
+        gpu_peak_memory_gb = torch.cuda.max_memory_allocated(i) / (1024 ** 3)
+        print(f"PEAK_GPU_MEMORY_GB_GPU{i}: {gpu_peak_memory_gb:.4f}", file=sys.stderr)
 
 def initialize_engine(args: argparse.Namespace) -> LLMEngine:
     """Initialize the LLMEngine from the command line arguments."""
