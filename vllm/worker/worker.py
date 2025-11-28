@@ -63,6 +63,10 @@ class Worker:
         self.worker_id = worker_id
         print(f'** WORKER_ID = {self.worker_id} **')
     
+    def get_peak_memory_gb(self) -> float:
+        """Get peak GPU memory allocated on this worker's device in GB."""
+        return torch.cuda.max_memory_allocated(self.device) / (1024 ** 3)
+    
     def init_model(self) -> None:
         # torch.distributed.all_reduce does not free the input tensor until
         # the synchronization point. This causes the memory usage to grow

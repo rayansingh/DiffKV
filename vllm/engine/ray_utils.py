@@ -8,13 +8,20 @@ logger = init_logger(__name__)
 
 try:
     import ray
-    from ray.air.util.torch_dist import TorchDistributedWorker
+    # Ray 2.x compatibility: TorchDistributedWorker was removed
+    try:
+        from ray.air.util.torch_dist import TorchDistributedWorker as RayTorchDistributedWorker
+    except (ImportError, ModuleNotFoundError):
+        # For Ray 2.x, we don't need TorchDistributedWorker
+        RayTorchDistributedWorker = object
 
-    class RayWorkerVllm(TorchDistributedWorker):
+    class RayWorkerVllm(RayTorchDistributedWorker):
         """Ray wrapper for vllm.worker.Worker, allowing Worker to be
         lazliy initialized after Ray sets CUDA_VISIBLE_DEVICES."""
 
         def __init__(self, init_cached_hf_modules=False) -> None:
+            if RayTorchDistributedWorker != object:
+                super().__init__()
             if init_cached_hf_modules:
                 from transformers.dynamic_module_utils import init_hf_modules
                 init_hf_modules()
@@ -29,13 +36,26 @@ try:
         def execute_method(self, method, *args, **kwargs):
             executor = getattr(self, method)
             return executor(*args, **kwargs)
+        
+        def set_environment_variables(self, rank, world_size, master_addr, master_port, distributed_init_method):
+            """Set environment variables for torch.distributed initialization"""
+            import os
+            os.environ["RANK"] = str(rank)
+            # LOCAL_RANK should be 0 because each Ray worker sees only one GPU
+            # Ray sets CUDA_VISIBLE_DEVICES to show only the assigned GPU
+            os.environ["LOCAL_RANK"] = "0"
+            os.environ["WORLD_SIZE"] = str(world_size)
+            os.environ["MASTER_ADDR"] = str(master_addr)
+            os.environ["MASTER_PORT"] = str(master_port)
+            self.distributed_init_method = distributed_init_method
+            return rank
 
 except ImportError as e:
     logger.warning(f"Failed to import Ray with {e!r}. "
                    "For distributed inference, please install Ray with "
                    "`pip install ray pandas pyarrow`.")
     ray = None
-    TorchDistributedWorker = None
+    RayTorchDistributedWorker = None
     RayWorkerVllm = None
 
 if TYPE_CHECKING:

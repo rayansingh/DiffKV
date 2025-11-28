@@ -9,7 +9,48 @@ from vllm.engine.ray_utils import RayWorkerVllm, initialize_cluster, ray
 
 
 if ray:
-    from ray.air.util.torch_dist import init_torch_dist_process_group
+    # Ray 2.x compatibility: ray.air.util.torch_dist was removed
+    try:
+        from ray.air.util.torch_dist import init_torch_dist_process_group
+    except (ImportError, ModuleNotFoundError):
+        # For Ray 2.x, implement a replacement for init_torch_dist_process_group
+        import socket
+        
+        def init_torch_dist_process_group(workers, backend="nccl"):
+            """Initialize torch distributed process group for Ray 2.x
+            
+            This function sets up the necessary environment variables on each worker
+            so that torch.distributed can initialize properly.
+            """
+            # Get world size
+            world_size = len(workers)
+            
+            # Use Ray's head node as the master
+            master_addr = ray.util.get_node_ip_address()
+            
+            # Get a free port for distributed initialization
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', 0))
+                s.listen(1)
+                master_port = s.getsockname()[1]
+            
+            # Create the distributed init method URL
+            distributed_init_method = f"tcp://{master_addr}:{master_port}"
+            
+            # Set environment variables on each worker
+            refs = []
+            for rank, worker in enumerate(workers):
+                # Call the set_environment_variables method we added to RayWorkerVllm
+                ref = worker.set_environment_variables.remote(
+                    rank, world_size, master_addr, master_port, distributed_init_method
+                )
+                refs.append(ref)
+            
+            # Wait for all workers to complete
+            ray.get(refs)
+            
+            return distributed_init_method
+    
     from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
 if TYPE_CHECKING:
@@ -106,19 +147,29 @@ class Orchestrator:
             self.workers.append(worker)
 
         # Initialize torch distributed process group for the workers.
-        init_torch_dist_process_group(self.workers, backend="nccl")
+        distributed_init_method = init_torch_dist_process_group(self.workers, backend="nccl")
         model_config = copy.deepcopy(self.model_config)
         parallel_config = copy.deepcopy(self.parallel_config)
         scheduler_config = copy.deepcopy(self.scheduler_config)
+        
+        # Create a closure that uses the distributed_init_method
+        def worker_init_fn():
+            # Get the distributed_init_method from the RayWorkerVllm wrapper
+            import os
+            distributed_init = os.getenv("MASTER_ADDR")
+            if distributed_init:
+                distributed_init = f"tcp://{os.getenv('MASTER_ADDR')}:{os.getenv('MASTER_PORT')}"
+            return Worker(
+                model_config,
+                parallel_config,
+                scheduler_config,
+                rank=None,  # Will be read from RANK env var
+                distributed_init_method=distributed_init,
+            )
+        
         self.run_workers("init_worker",
                           get_all_outputs=True,
-                          worker_init_fn=lambda: Worker(
-                              model_config,
-                              parallel_config,
-                              scheduler_config,
-                              None,
-                              None,
-                          ))
+                          worker_init_fn=worker_init_fn)
         self._set_worker_ids()
         self.run_workers(
             "init_model",

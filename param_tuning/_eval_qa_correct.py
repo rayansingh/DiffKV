@@ -30,8 +30,8 @@ np.random.seed(666)
 
 # vllm config
 # GPUS = list(range(8))
-# GPUS = list(range(0, 4))
-GPUS = list(range(0, 1))
+GPUS = list(range(0, 4))
+# GPUS = list(range(0, 1))
 GPU_MEM_UTIL = 0.97
 BATCH_SIZE = 256 # max number of concurrently running seqs in vllm
 # MAX_PADDING = 4096
@@ -477,6 +477,30 @@ def main(args: argparse.Namespace):
               f'k{args.kbits_high}v{args.vbits_high}-k{args.kbits_low}v{args.vbits_low} '
               f'p={args.kv_prune_thresh}, q={args.kv_quant_thresh} round {round_id} complete '
               f'--- master elapsed time = {time.time() - t0} s---')
+        
+        # Force cleanup of Ray and GPU memory to prevent accumulation between rounds
+        try:
+            import torch
+            import ray
+            
+            # Clear CUDA cache
+            if torch.cuda.is_available():
+                for i in range(torch.cuda.device_count()):
+                    with torch.cuda.device(i):
+                        torch.cuda.empty_cache()
+                        torch.cuda.synchronize()
+                print("GPU cache cleared")
+            
+            # Shutdown Ray
+            if ray.is_initialized():
+                ray.shutdown()
+                print("Ray shut down successfully")
+                
+            # Give system time to fully release resources
+            time.sleep(5)
+            
+        except Exception as e:
+            print(f"Warning: Could not complete cleanup: {e}")
 
 
 # # dataset config

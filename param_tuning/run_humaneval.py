@@ -149,15 +149,38 @@ def run_humaneval_dataset(
     # log stats when the dataset is finished
     log_llm_stats(dataset, engine, log_path)
 
-    # Log peak GPU memory usage across all GPUs
-    num_gpus = torch.cuda.device_count()
-    total_peak_memory_bytes = sum(torch.cuda.max_memory_allocated(i) for i in range(num_gpus))
-    total_peak_memory_gb = total_peak_memory_bytes / (1024 ** 3)
-    print(f"PEAK_GPU_MEMORY_GB: {total_peak_memory_gb:.4f}", file=sys.stderr)
-    # Also log per-GPU breakdown
-    for i in range(num_gpus):
-        gpu_peak_memory_gb = torch.cuda.max_memory_allocated(i) / (1024 ** 3)
-        print(f"PEAK_GPU_MEMORY_GB_GPU{i}: {gpu_peak_memory_gb:.4f}", file=sys.stderr)
+    # Log peak GPU memory usage from all workers
+    # When using Ray with distributed workers, memory is allocated in the workers, not main process
+    if hasattr(engine, 'orchestrator') and hasattr(engine.orchestrator, 'workers') and len(engine.orchestrator.workers) > 0:
+        # Distributed setup with Ray workers
+        try:
+            peak_memory_per_worker = engine.orchestrator.run_workers(
+                "get_peak_memory_gb",
+                get_all_outputs=True
+            )
+            total_peak_memory_gb = sum(peak_memory_per_worker)
+            print(f"PEAK_GPU_MEMORY_GB: {total_peak_memory_gb:.4f}", file=sys.stderr)
+            for i, peak_mem in enumerate(peak_memory_per_worker):
+                print(f"PEAK_GPU_MEMORY_GB_GPU{i}: {peak_mem:.4f}", file=sys.stderr)
+        except Exception as e:
+            print(f"WARNING: Failed to get peak memory from workers: {e}", file=sys.stderr)
+            # Fallback to local GPU check (will be 0 in distributed case)
+            num_gpus = torch.cuda.device_count()
+            total_peak_memory_bytes = sum(torch.cuda.max_memory_allocated(i) for i in range(num_gpus))
+            total_peak_memory_gb = total_peak_memory_bytes / (1024 ** 3)
+            print(f"PEAK_GPU_MEMORY_GB: {total_peak_memory_gb:.4f}", file=sys.stderr)
+            for i in range(num_gpus):
+                gpu_peak_memory_gb = torch.cuda.max_memory_allocated(i) / (1024 ** 3)
+                print(f"PEAK_GPU_MEMORY_GB_GPU{i}: {gpu_peak_memory_gb:.4f}", file=sys.stderr)
+    else:
+        # Single GPU or non-distributed setup
+        num_gpus = torch.cuda.device_count()
+        total_peak_memory_bytes = sum(torch.cuda.max_memory_allocated(i) for i in range(num_gpus))
+        total_peak_memory_gb = total_peak_memory_bytes / (1024 ** 3)
+        print(f"PEAK_GPU_MEMORY_GB: {total_peak_memory_gb:.4f}", file=sys.stderr)
+        for i in range(num_gpus):
+            gpu_peak_memory_gb = torch.cuda.max_memory_allocated(i) / (1024 ** 3)
+            print(f"PEAK_GPU_MEMORY_GB_GPU{i}: {gpu_peak_memory_gb:.4f}", file=sys.stderr)
 
 def initialize_engine(args: argparse.Namespace) -> LLMEngine:
     """Initialize the LLMEngine from the command line arguments."""
