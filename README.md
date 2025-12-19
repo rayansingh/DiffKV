@@ -25,6 +25,7 @@ DiffKV is built on top of vLLM (commit [1db83e3](https://github.com/vllm-project
 
 DiffKV supports model weight quantization using [GPTQ](https://arxiv.org/abs/2210.17323), [AWQ](https://arxiv.org/abs/2306.00978), and FP8 formats.
 
+**NOTE:** To run LLaMa models, you will need to gain access on Huggingface.
 
 ## Installation
 
