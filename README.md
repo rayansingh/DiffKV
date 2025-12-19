@@ -85,12 +85,13 @@ To run model evaluations on supported benchmarks:
 **Usage Example:**
 
 ```bash
-python param_tuning/_eval_codegen.py \
-  --model meta-llama/Meta-Llama-3-8B-Instruct \
-  --kv-prune-thresh 0.02 \
-  --kv-quant-thresh 0.6 \
-  --kv-min-distance 0.3 \
-  --kv-convergence-mode logarithmic
+python3 _eval_qa_correct.py \
+   --model llama --model-gen 3 --model-size 8 \
+   --dataset gsm8k --rounds 1 \
+   --log-path ../logs/per_token_thresh/llama3-8b/linear \
+   --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 \
+   --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 \
+   --kv-min-distance 0.7 --kv-convergence-mode linear
 ```
 
 3. **Results location:**
