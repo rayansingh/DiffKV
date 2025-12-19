@@ -1,30 +1,42 @@
 #!/bin/bash
 export PYTHONPATH=/workspace/DiffKV:$PYTHONPATH
-#---------------------------------- LLaMA-3-8B with linear convergence
-# Configuration: prune_thresh=0.02, quant_thresh=1.0 (DiffKV author settings from benchmark_throughput.sh)
-# Quantization: 8-bit high (keys), 4-bit high (values), 4-bit low (keys), 2-bit low (values)
-# Convergence: linear mode with min_distance=0.1
 
-# # ******** gsm8k
-python3 _eval_qa_correct.py --model llama --dataset gsm8k --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode none
-python3 _eval_qa_correct.py --model llama --dataset gsm8k --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode linear
-python3 _eval_qa_correct.py --model llama --dataset gsm8k --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode logarithmic
+#!/bin/bash
 
-# ******** minerva_math
-python3 _eval_qa_correct.py --model llama --dataset minerva_math --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode none
-python3 _eval_qa_correct.py --model llama --dataset minerva_math --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode linear
-python3 _eval_qa_correct.py --model llama --dataset minerva_math --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode logarithmic
+# Define arrays for parameter combinations
+modes=(none linear logarithmic)
+dists=(0.1 0.5 0.7)
+threshs=(0.6 0.9 1.0)
 
-# ******** humaneval
-python3 _eval_codegen.py --model llama --dataset humaneval --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/none --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode none
-python3 _eval_codegen.py --model llama --dataset humaneval --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/linear --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode linear
-python3 _eval_codegen.py --model llama --dataset humaneval --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b/logarithmic --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode logarithmic
+# Common arguments (avoids repetition)
+common_args=(
+  --model llama
+  --dataset gsm8k
+  --model-gen 3
+  --model-size 3
+  --kbits-high 8
+  --vbits-high 4
+  --kbits-low 4
+  --vbits-low 2
+  --kv-prune-thresh 0.02
+  --kv-buffer 64
+  --rounds 1
+)
 
-# # ******** mbpp_plus
-# python3 _eval_codegen.py --model llama --dataset mbpp_plus --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 3 --kv-min-distance 0.7 --kv-convergence-mode none
+# Completed runs (easier to maintain and extend)
 
-# # ******** mmlu
-# python3 _eval_qa_correct.py --model llama --dataset mmlu_cot --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode none
-
-# # ******** mmlu-pro
-# python3 _eval_qa_correct.py --model llama --dataset mmlu_pro_cot --model-gen 3 --model-size 8 --log-path ../logs/per_token_thresh/llama3-8b --kbits-high 8 --vbits-high 4 --kbits-low 4 --vbits-low 2 --kv-prune-thresh 0.02 --kv-quant-thresh 1.0 --kv-buffer 64 --rounds 1 --kv-min-distance 0.7 --kv-convergence-mode none
+for mode in "${modes[@]}"; do
+  for dist in "${dists[@]}"; do
+    for thresh in "${threshs[@]}"; do
+      key="${mode}_${dist}_${thresh}"
+      
+      # Run the command
+      python3 _eval_qa_correct.py \
+        "${common_args[@]}" \
+        --log-path "../logs/per_token_thresh/llama3.2-3b/$key" \
+        --kv-quant-thresh "$thresh" \
+        --kv-min-distance "$dist" \
+        --kv-convergence-mode "$mode"
+    done
+  done
+done
