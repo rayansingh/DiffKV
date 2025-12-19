@@ -53,7 +53,51 @@ Alternatively, you can use the virtual environment's Python directly without act
 /venv/main/bin/python3 <script.py>
 ```
 
-## Recent Improvements
+## Usage
+
+### Supported Benchmarks
+
+The evaluation scripts support the following benchmarks:
+- **HumanEval**: Code generation benchmark (164 programming problems)
+- **GSM8k**: Grade school math problems with step-by-step reasoning
+- **Minerva Math**: Advanced mathematics problems (MATH dataset)
+
+### Running Evaluations
+
+To run model evaluations on supported benchmarks:
+
+1. **Prepare the environment:**
+   ```bash
+   cd param_tuning
+   source /venv/main/bin/activate
+   export PYTHONPATH=/workspace/DiffKV:$PYTHONPATH
+   mkdir -p ../logs
+   ```
+
+2. **Key parameters** in evaluation scripts:
+   - `--kbits-high/low`, `--vbits-high/low`: Quantization bit-widths for keys and values
+   - `--kv-prune-thresh`: Threshold below which tokens are pruned
+   - `--kv-quant-thresh`: Threshold above which tokens remain in high precision
+   - `--kv-min-distance` (**NEW**): Minimum gap between high/low precision regions (must be ≤ `kv_quant_thresh - kv_prune_thresh`) 
+   - `--kv-convergence-mode` (**NEW**): Thresholding strategy (`none`, `linear`, `logarithmic`)
+   - `--kv-buffer-size`: Buffer size for KV cache management
+
+**Usage Example:**
+
+```bash
+python param_tuning/_eval_codegen.py \
+  --model meta-llama/Meta-Llama-3-8B-Instruct \
+  --kv-prune-thresh 0.02 \
+  --kv-quant-thresh 0.6 \
+  --kv-min-distance 0.3 \
+  --kv-convergence-mode logarithmic
+```
+
+3. **Results location:**
+   - Raw outputs: `logs/per_token_thresh/$MODEL/$DATASET/`
+   - Each test creates `eval.csv` with correctness metrics and GPU memory usage
+
+## Our Work
 
 This repository includes the following enhancements to the original DiffKV implementation:
 
@@ -92,68 +136,10 @@ Automatically tracks and reports peak GPU memory usage during inference, enablin
 - Enhanced evaluation scripts (`param_tuning/_eval_codegen.py`, `param_tuning/_eval_qa_correct.py`)
 - Integrated with existing logging infrastructure
 
-**Usage Example:**
-
-```bash
-python param_tuning/_eval_codegen.py \
-  --model meta-llama/Meta-Llama-3-8B-Instruct \
-  --kv-prune-thresh 0.02 \
-  --kv-quant-thresh 0.6 \
-  --kv-min-distance 0.3 \
-  --kv-convergence-mode logarithmic
-```
-
 Results will include memory metrics alongside correctness metrics in the output CSV.
 
-
-## Usage
-
-### Supported Benchmarks
-
-The evaluation scripts support the following benchmarks:
-- **HumanEval**: Code generation benchmark (164 programming problems)
-- **GSM8k**: Grade school math problems with step-by-step reasoning
-- **Minerva Math**: Advanced mathematics problems (MATH dataset)
-- **MMLU-CoT**: Multi-task language understanding with chain-of-thought
-- **GPQA**: Graduate-level science questions
-- **AIME**: American Invitational Mathematics Examination
-
-### Running Evaluations
-
-To run model evaluations on supported benchmarks:
-
-1. **Prepare the environment:**
-   ```bash
-   cd param_tuning
-   source /venv/main/bin/activate
-   export PYTHONPATH=/workspace/DiffKV:$PYTHONPATH
-   mkdir -p ../logs
-   ```
-
-2. **Run a test script** (e.g., for Mixtral on HumanEval):
-   ```bash
-   ./try_mixtral_humaneval.sh
-   ```
-
-3. **Using the cleanup wrapper** for long test sequences:
-   ```bash
-   ./run_with_cleanup.sh ./try_mixtral_humaneval.sh
-   ```
-
-4. **Key parameters** in evaluation scripts:
-   - `--kbits-high/low`, `--vbits-high/low`: Quantization bit-widths for keys and values
-   - `--kv-prune-thresh`: Threshold below which tokens are pruned
-   - `--kv-quant-thresh`: Threshold above which tokens remain in high precision
-   - `--kv-min-distance`: Minimum gap between high/low precision regions (must be ≤ `kv_quant_thresh - kv_prune_thresh`)
-   - `--kv-convergence-mode`: Thresholding strategy (`none`, `linear`, `logarithmic`)
-   - `--kv-buffer-size`: Buffer size for KV cache management
-
-5. **Results location:**
-   - Raw outputs: `logs/per_token_thresh/$MODEL/$DATASET/`
-   - Each test creates `eval.csv` with correctness metrics and GPU memory usage
-
 ## Citation
-If you use DiffKV for your research, please cite our [paper](https://arxiv.org/abs/2412.03131):
+[Original DiffKV paper](https://arxiv.org/abs/2412.03131)
 ```bibtex
 @inproceedings{zhang2025diffkv,
   title={DiffKV: Differentiated Memory Management for Large Language Models with Parallel KV Compaction},
