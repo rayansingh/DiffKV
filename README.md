@@ -31,6 +31,7 @@ DiffKV supports model weight quantization using [GPTQ](https://arxiv.org/abs/221
 #### Prerequisites:
 - Python >= 3.10
 - Nvidia GPUs with Ada, Hopper or newer architectures
+- Ray >= 2.0 (for distributed inference)
 
 #### Install DiffKV from source:
 
@@ -51,6 +52,58 @@ Alternatively, you can use the virtual environment's Python directly without act
 ```bash
 /venv/main/bin/python3 <script.py>
 ```
+
+## Recent Improvements
+
+This repository includes the following enhancements to the original DiffKV implementation:
+
+### Layer-Dependent Threshold Convergence
+
+**New Parameters:**
+- `--kv-min-distance`: Minimum gap maintained between pruning and quantization thresholds
+- `--kv-convergence-mode`: Controls how thresholds converge across layers (`none`, `linear`, `logarithmic`)
+
+**Feature Description:**
+
+The original DiffKV uses fixed `kv_prune_thresh` and `kv_quant_thresh` across all layers. This enhancement allows the pruning threshold to gradually approach the quantization threshold across deeper layers, enabling more aggressive compression in later layers where token importance may differ.
+
+- **`none` mode (default)**: Fixed thresholds across all layers (original behavior)
+- **`linear` mode**: Pruning threshold increases linearly toward quantization threshold
+- **`logarithmic` mode**: Pruning threshold increases logarithmically, with more aggressive convergence in deeper layers
+
+**Implementation:**
+- Updated CUDA kernels (`csrc/cache_kernels.cu`, `csrc/long_prompt_cache_kernels.cu`)
+- Modified inference engine (`vllm/engine/arg_utils.py`, `vllm/config.py`, `vllm/sequence.py`)
+- Enhanced attention layers (`vllm/model_executor/layers/sparse_attention_big_kernel.py`)
+
+**Constraint:** `kv_min_distance` must satisfy: `kv_min_distance <= (kv_quant_thresh - kv_prune_thresh)`
+
+### Peak GPU Memory Tracking
+
+**Feature Description:**
+
+Automatically tracks and reports peak GPU memory usage during inference, enabling systematic memory profiling across different compression configurations.
+
+**Outputs:**
+- **Stderr logs**: `PEAK_GPU_MEMORY_GB` and per-GPU `PEAK_GPU_MEMORY_GB_GPU{i}` entries
+- **CSV metrics**: `avg_peak_memory_gb` and `max_peak_memory_gb` in `eval.csv`
+
+**Implementation:**
+- Enhanced evaluation scripts (`param_tuning/_eval_codegen.py`, `param_tuning/_eval_qa_correct.py`)
+- Integrated with existing logging infrastructure
+
+**Usage Example:**
+
+```bash
+python param_tuning/_eval_codegen.py \
+  --model meta-llama/Meta-Llama-3-8B-Instruct \
+  --kv-prune-thresh 0.02 \
+  --kv-quant-thresh 0.6 \
+  --kv-min-distance 0.3 \
+  --kv-convergence-mode logarithmic
+```
+
+Results will include memory metrics alongside correctness metrics in the output CSV.
 
 
 ## Usage
@@ -87,6 +140,40 @@ Similarly:
 > ```python
 > LOG_DIR = os.getenv('DIFFKV_LOG_DIR', '{PATH_TO_DiffKV}/logs')
 > ```
+
+### Running Evaluations
+
+To run model evaluations on supported benchmarks:
+
+1. **Prepare the environment:**
+   ```bash
+   cd param_tuning
+   source /venv/main/bin/activate
+   export PYTHONPATH=/workspace/DiffKV:$PYTHONPATH
+   mkdir -p ../logs
+   ```
+
+2. **Run a test script** (e.g., for Mixtral on HumanEval):
+   ```bash
+   ./try_mixtral_humaneval.sh
+   ```
+
+3. **Using the cleanup wrapper** for long test sequences:
+   ```bash
+   ./run_with_cleanup.sh ./try_mixtral_humaneval.sh
+   ```
+
+4. **Key parameters** in evaluation scripts:
+   - `--kbits-high/low`, `--vbits-high/low`: Quantization bit-widths for keys and values
+   - `--kv-prune-thresh`: Threshold below which tokens are pruned
+   - `--kv-quant-thresh`: Threshold above which tokens remain in high precision
+   - `--kv-min-distance`: Minimum gap between high/low precision regions (must be ≤ `kv_quant_thresh - kv_prune_thresh`)
+   - `--kv-convergence-mode`: Thresholding strategy (`none`, `linear`, `logarithmic`)
+   - `--kv-buffer-size`: Buffer size for KV cache management
+
+5. **Results location:**
+   - Raw outputs: `logs/per_token_thresh/$MODEL/$DATASET/`
+   - Each test creates `eval.csv` with correctness metrics and GPU memory usage
 
 
 ### Functional Verification of the Artifact ###
